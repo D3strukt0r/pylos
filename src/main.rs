@@ -68,17 +68,17 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
     // parent directory to determine the project root
     let cwd = std::env::current_dir()?;
 
-    let project_root = match  (
-        find_recursively(&cwd, CONFIG_FILE_NAME_LOCAL),
-        find_recursively(&cwd, CONFIG_FILE_NAME_PROJECT)
-    ) {
-        (Some(filepath), _) => filepath,
-        (_, Some(filepath)) => filepath,
+    let local_config = find_recursively(&cwd, CONFIG_FILE_NAME_LOCAL);
+    let project_config = find_recursively(&cwd, CONFIG_FILE_NAME_PROJECT);
+
+    let project_root = match (local_config.as_ref(), project_config.as_ref()) {
+        (Some(filepath), _) => filepath.parent().unwrap(),
+        (_, Some(filepath)) => filepath.parent().unwrap(),
         (None, None) => {
-            eprintln!( "Could not find a project root. Please add a {} or {} to your project root",
-                CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT
+            eprintln!("Could not find a project root. Please add a {} or {} to your project root",
+                      CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT
             );
-            sysexits::ExitCode::OsErr.exit()
+            std::process::exit(sysexits::ExitCode::OsErr as i32)
         }
     };
 
