@@ -11,6 +11,7 @@ pub struct Cli {
     pub service: Option<String>,
 
     /// Run the command in offline mode. This will prevent dev-cli from trying to connect to the internet.
+    #[arg(short, long)]
     pub offline: Option<bool>,
 
     #[command(subcommand)]
