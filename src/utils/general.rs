@@ -1,7 +1,12 @@
+use anyhow::Result;
 use bollard::Docker;
 use clap::{Parser, Subcommand};
-use std::collections::HashMap;
+use std::{collections::HashMap, env, path::Path};
 use bollard::network::{CreateNetworkOptions, ListNetworksOptions};
+
+use crate::{CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT};
+
+use super::{app_config::AppConfig, path::find_recursively};
 
 #[derive(Debug, Parser)]
 #[command(version, about = "A CLI for managing local Docker development environments", long_about = None)]
@@ -247,4 +252,28 @@ pub async fn check_and_setup_docker(docker: &bollard::Docker) {
             sysexits::ExitCode::OsErr.exit()
         }
     }
+}
+
+pub fn get_project_root() -> Result<Box<Path>> {
+    let cwd = env::current_dir()?;
+
+    let local_config = find_recursively(&cwd, CONFIG_FILE_NAME_LOCAL);
+    let project_config = find_recursively(&cwd, CONFIG_FILE_NAME_PROJECT);
+
+    let project_root = match (local_config.as_ref(), project_config.as_ref()) {
+        (Some(filepath), _) => filepath.parent().unwrap(),
+        (_, Some(filepath)) => filepath.parent().unwrap(),
+        (None, None) => {
+            eprintln!("Could not find a project root. Please add a {} or {} to your project root",
+                      CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT
+            );
+            std::process::exit(sysexits::ExitCode::OsErr as i32)
+        }
+    };
+
+    Ok(Box::from(project_root))
+}
+
+pub fn get_app_config(project_root: &Path) -> Result<AppConfig> {
+    AppConfig::merge_from_project_root(&project_root)
 }

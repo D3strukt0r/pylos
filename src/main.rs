@@ -6,8 +6,8 @@ mod utils;
 
 use bollard::Docker;
 use clap::Parser;
+use utils::general::{get_app_config, get_project_root};
 use std::path::{PathBuf, Path};
-use crate::utils::path::find_recursively; // Used for writing assertions
 use crate::utils::general::{Cli, Commands, is_docker_required, docker_running, check_and_setup_system, check_and_setup_docker};
 
 #[allow(unused)]
@@ -66,24 +66,8 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
 
     // Find .dev-cli.yml/.dev-cli.dist.yml in the current directory or any
     // parent directory to determine the project root
-    let cwd = std::env::current_dir()?;
-
-    let local_config = find_recursively(&cwd, CONFIG_FILE_NAME_LOCAL);
-    let project_config = find_recursively(&cwd, CONFIG_FILE_NAME_PROJECT);
-
-    let project_root = match (local_config.as_ref(), project_config.as_ref()) {
-        (Some(filepath), _) => filepath.parent().unwrap(),
-        (_, Some(filepath)) => filepath.parent().unwrap(),
-        (None, None) => {
-            eprintln!("Could not find a project root. Please add a {} or {} to your project root",
-                      CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT
-            );
-            std::process::exit(sysexits::ExitCode::OsErr as i32)
-        }
-    };
-
-    println!("project root: {:?}", &project_root);
-    let app_config = utils::app_config::AppConfig::merge_from_project_root(&project_root);
+    let project_root = get_project_root()?;
+    let app_config = get_app_config(&project_root);
     match app_config {
         Ok(conf) => println!("config loaded: {:?}", conf),
         Err(e) => eprintln!("error loading app config: {:?}", e)
@@ -91,7 +75,7 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
 
     // Find and read the docker `compose.yml` file
     // TODO: Check if command requires knowledge of the compose config
-    let docker_compose_config_path = Path::new(&project_root).join("compose.yml");
+    let docker_compose_config_path = Path::new(project_root.as_ref()).join("compose.yml");
     let docker_compose = if docker_compose_config_path.is_file() {
         utils::docker_compose::DockerCompose::new(docker_compose_config_path)
     } else {
