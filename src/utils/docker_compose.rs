@@ -71,6 +71,46 @@ impl DockerCompose {
         };
         Ok(())
     }
+
+    pub fn up(&self, detached: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut extra_args = vec![];
+
+        if detached {
+            extra_args.push("--detach");
+        }
+
+        let args = vec![vec!["compose", "up"], extra_args].concat();
+        let cmd = subprocess::Exec::cmd("docker")
+            .args(&args)
+            .cwd(&self.file.parent().unwrap())
+            .join()?;
+
+        if !cmd.success() {
+            println!("Error: {:?}", cmd);
+            sysexits::ExitCode::OsErr.exit()
+        }
+        Ok(())
+    }
+
+    pub fn down(&self, remove_volumes: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut extra_args = vec![];
+
+        if remove_volumes {
+            extra_args.push("--volumes");
+        }
+
+        let args = vec![vec!["compose", "down"], extra_args].concat();
+        let cmd = subprocess::Exec::cmd("docker")
+            .args(&args)
+            .cwd(&self.file.parent().unwrap())
+            .join()?;
+
+        if !cmd.success() {
+            println!("Error: {:?}", cmd);
+            sysexits::ExitCode::OsErr.exit()
+        }
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]

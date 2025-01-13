@@ -108,8 +108,18 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
                 Exec { service, user, command } => {
                     commands::exec::run(docker_compose, service, user, command.to_vec())?
                 }
-                //Stop { remove_data: false } => println!("Stopping without removing data..."),
-                //Stop { remove_data: true } => println!("Stopping with removing data..."),
+                Start => {
+                    println!("Starting project ...");
+                    docker_compose.up(true)?
+                }
+                Stop { remove_data } => {
+                    if remove_data {
+                        println!("Stopping with removing data...");
+                    } else {
+                        println!("Stopping without removing data...");
+                    }
+                    docker_compose.down(remove_data)?
+                }
                 _ => {
                     println!("Command not implemented yet: {:?}", command);
                     sysexits::ExitCode::OsErr.exit()
