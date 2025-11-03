@@ -6,7 +6,7 @@ mod utils;
 
 use bollard::Docker;
 use clap::Parser;
-use utils::general::{get_app_config, get_project_root};
+use utils::general::{ensure_proxy_running, get_app_config, get_project_root};
 use std::path::{PathBuf, Path};
 use crate::utils::general::{Cli, Commands, is_docker_required, docker_running, check_and_setup_system, check_and_setup_docker};
 
@@ -14,6 +14,7 @@ use crate::utils::general::{Cli, Commands, is_docker_required, docker_running, c
 use assert_cmd::prelude::*; // Add methods on commands
 #[allow(unused)]
 use predicates::prelude::*;
+
 
 // Parameters for config
 // - docker-compose-path: Path to the docker-compose file (default: {project-root}/compose.yml)
@@ -110,7 +111,8 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
                 }
                 Start => {
                     println!("Starting project ...");
-                    docker_compose.up(true)?
+                    ensure_proxy_running();
+                    docker_compose.up(None, true)?
                 }
                 Stop { remove_data } => {
                     if remove_data {
@@ -118,7 +120,7 @@ async fn main() -> Result<sysexits::ExitCode, Box<dyn std::error::Error>> {
                     } else {
                         println!("Stopping without removing data...");
                     }
-                    docker_compose.down(remove_data)?
+                    docker_compose.down(None, remove_data)?
                 }
                 _ => {
                     println!("Command not implemented yet: {:?}", command);

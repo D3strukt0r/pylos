@@ -3,10 +3,15 @@ use bollard::Docker;
 use clap::{Parser, Subcommand};
 use std::{collections::HashMap, env, path::Path};
 use bollard::network::{CreateNetworkOptions, ListNetworksOptions};
+use rust_embed::Embed;
 
 use crate::{CONFIG_FILE_NAME_LOCAL, CONFIG_FILE_NAME_PROJECT};
 
 use super::{app_config::AppConfig, path::find_recursively};
+
+#[derive(Embed)]
+#[folder = "files/"]
+pub struct Asset;
 
 #[derive(Debug, Parser)]
 #[command(version, about = "A CLI for managing local Docker development environments", long_about = None)]
@@ -276,4 +281,21 @@ pub fn get_project_root() -> Result<Box<Path>> {
 
 pub fn get_app_config(project_root: &Path) -> Result<AppConfig> {
     AppConfig::merge_from_project_root(&project_root)
+}
+
+pub fn ensure_proxy_running() -> Result<(), Box<dyn std::error::Error>> {
+    for file in Asset::get("docker/")::iter() {
+        println!("{}", file.as_ref());
+    }
+    for file in Asset::iter() {
+        println!("{}", file.as_ref());
+    }
+    let dot_env = Asset::get("docker/.env");
+    if dot_env == None {
+        sysexits::ExitCode::OsErr.exit()
+    }
+
+    println!("{:?}", std::str::from_utf8(dot_env.data.as_ref()));
+
+    Ok(())
 }

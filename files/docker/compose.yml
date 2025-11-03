@@ -1,0 +1,40 @@
+services:
+  traefik:
+    restart: unless-stopped
+    image: traefik
+    container_name: traefik
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - ../certs-conf:/etc/traefik/certs-conf
+      - ../certs:/certs
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dev-cli-web
+    labels:
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`traefik.test`) && PathPrefix(`/api`, `/dashboard`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=api@internal
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+
+  # The local DNS to resolve the *.test domains to 127.0.0.1 and all project specific configs in ~/.iwf-dev/dns
+  # (for format see manpage: https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html)
+  # install on MacOS with:
+  # sudo mkdir -v /etc/resolver && sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/test'
+  dns:
+    restart: unless-stopped
+    image: 4km3/dnsmasq
+    container_name: dns
+    command: --address=/.test/127.0.0.1
+    volumes:
+      - ../dns:/etc/dnsmasq.d:ro
+    ports:
+      - 53:53/udp
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  dev-cli-web:
+    external: true

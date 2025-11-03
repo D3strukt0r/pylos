@@ -1,0 +1,35 @@
+logLevel: DEBUG
+
+api:
+  insecure: true
+  dashboard: true
+  debug: true
+
+ping: {}
+
+entryPoints:
+  web:
+    address: ':80'
+  websecure:
+    address: ':443'
+
+providers:
+  file:
+    directory: /etc/traefik/certs-conf
+    watch: true
+  docker:
+    endpoint: unix:///var/run/docker.sock
+    watch: true
+    exposedByDefault: true
+    network: web
+
+tls:
+  options:
+    tls-opts:
+      minVersion: VersionTLS12
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /iwf-local.dev/iwf-local_dev.crt
+        keyFile: /iwf-local.dev/iwf-local_dev.key
+

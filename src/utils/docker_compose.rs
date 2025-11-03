@@ -72,11 +72,17 @@ impl DockerCompose {
         Ok(())
     }
 
-    pub fn up(&self, detached: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn up(&self, services: Option<Vec<&str>>, detached: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut extra_args = vec![];
 
         if detached {
             extra_args.push("--detach");
+        }
+
+        if let Some(services) = services {
+            for service in services {
+                extra_args.push(service);
+            }
         }
 
         let args = vec![vec!["compose", "up"], extra_args].concat();
@@ -92,11 +98,17 @@ impl DockerCompose {
         Ok(())
     }
 
-    pub fn down(&self, remove_volumes: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn down(&self, services: Option<Vec<&str>>, remove_volumes: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut extra_args = vec![];
 
         if remove_volumes {
             extra_args.push("--volumes");
+        }
+
+        if let Some(services) = services {
+            for service in services {
+                extra_args.push(service);
+            }
         }
 
         let args = vec![vec!["compose", "down"], extra_args].concat();
